@@ -1,0 +1,10 @@
+{
+  "name": "print-assert",
+  "version": "0.0.1",
+  "author": "Matthew Zito",
+  "repo": "exbotanical/print-assert",
+  "license": "MIT",
+  "description": "Assertion primitives for matching on stdout and stderr output",
+  "keywords": ["unit test", "assertion", "matching", "file i/o"],
+  "src": ["include/print_assert.h", "src/lib.c"]
+}
