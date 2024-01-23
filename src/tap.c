@@ -120,7 +120,19 @@ __ok (
     printf("not ");
   }
 
-  fprintf(stdout, "ok %d - %s", num_ran_tests, msg);
+  fprintf(stdout, "ok %d - ", num_ran_tests);
+
+  // See "Escaping" - https://testanything.org/tap-version-14-specification.html
+  char* c;
+  flockfile(stdout);
+  for (c = msg; *c != '\0'; c++) {
+    if (*c == '#') {
+      fputc('\\', stdout);
+    }
+    fputc((int)*c, stdout);
+  }
+  funlockfile(stdout);
+
   if (is_todo_block) {
     fprintf(stdout, " # TODO %s", todo_msg);
   }
