@@ -10,7 +10,6 @@
 extern "C" {
 #endif
 
-// TODO: escape #
 // TODO: parser for gh actions, etc
 
 unsigned int __ok(
@@ -37,7 +36,6 @@ unsigned int exit_status(void);
 
 unsigned int bail_out(const char* fmt, ...);
 
-// TODO: vararg fmt
 #define ok(test, ...) \
   __ok(test ? 1 : 0, __func__, __FILE__, __LINE__, s_fmt(__VA_ARGS__))
 
@@ -52,10 +50,7 @@ unsigned int bail_out(const char* fmt, ...);
   }                \
   while (0)
 
-// TODO: vararg fmt
 #define skip(test, ...) __skip(1, s_fmt(__VA_ARGS__));
-
-// #define todo(test, ...)
 
 #define done_testing()  return exit_status()
 

@@ -166,9 +166,6 @@ __skip (unsigned int num_skips, char* msg)
   });
 }
 
-// TODO: tests
-// TODO: lib
-// TODO: add to clib registry
 int
 __write_shared_mem (int status)
 {
@@ -299,9 +296,3 @@ bail_out (const char* fmt, ...)
 
   return EXIT_SUCCESS;
 }
-
-// TODO: timer?
-// start = clock()
-// end = clock()
-// diff = (double)(end - start) / CLOCKS_PER_SEC;
-// printf("\ttime elapsed: %0.3fs\n", diff);
