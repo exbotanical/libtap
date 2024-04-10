@@ -1,8 +1,10 @@
 #ifndef LIBTAP_H
 #define LIBTAP_H
 
+#include <stdlib.h>
 #include <sys/mman.h>
 #include <sys/param.h>
+#include <sys/wait.h>
 #include <unistd.h>
 
 #include "libutil/libutil.h"
@@ -96,6 +98,9 @@ unsigned int bail_out(const char* fmt, ...);
     }                                                           \
     /* grab prev value (and reset) - if 0, code succeeded */    \
     int test_died = __write_shared_mem(0);                      \
+    if (!test_died) {                                           \
+      code                                                      \
+    }                                                           \
     __ok(                                                       \
       wants_death ? test_died : !test_died,                     \
       __func__,                                                 \
