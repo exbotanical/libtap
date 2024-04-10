@@ -5,15 +5,11 @@
   "repo": "exbotanical/libtap",
   "license": "MIT",
   "description": "An implementation of TAP testing",
-  "keywords": [
-    "test anything protocol",
-    "testing",
-    "unit test"
-  ],
-  "src": [
-    "include/libtap.h",
-    "src/tap.c"
-  ],
+  "keywords": ["test anything protocol", "testing", "unit test"],
+  "src": ["include/libtap.h", "src/tap.c"],
+  "dependencies": {
+    "exbotanical/libutil": "*"
+  },
   "development": {
     "exbotanical/print-assert": "0.0.1"
   }
