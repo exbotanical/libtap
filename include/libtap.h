@@ -3,6 +3,7 @@
 
 #include <sys/mman.h>
 #include <sys/param.h>
+#include <unistd.h>
 
 #include "libutil/libutil.h"
 
