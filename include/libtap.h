@@ -40,6 +40,18 @@ unsigned int bail_out(const char* fmt, ...);
 #define ok(test, ...) \
   __ok(test ? 1 : 0, __func__, __FILE__, __LINE__, s_fmt(__VA_ARGS__))
 
+#define is(actual, expected, ...)              \
+  __ok(                                        \
+    !(actual == expected ? 0                   \
+      : !actual          ? -1                  \
+      : !expected        ? 1                   \
+                         : strcmp(actual, expected)), \
+    __func__,                                  \
+    __FILE__,                                  \
+    __LINE__,                                  \
+    s_fmt(__VA_ARGS__)                         \
+  );
+
 #define skip_start(cond, num_skips, ...)     \
   do {                                       \
     if (cond) {                              \

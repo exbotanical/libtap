@@ -16,21 +16,18 @@ typedef struct {
 } test_util;
 
 static void
-will_fail ()
-{
+will_fail () {
   test_util *util;
   util->a + util->b;
 }
 
 static void
-will_succeed ()
-{
+will_succeed () {
   10 + 10;
 }
 
 int
-main ()
-{
+main () {
   pa_setup();
 
   unsigned int is_skip = 1;
@@ -41,7 +38,7 @@ main ()
   assert(ok(1 == 11, "result of %d == %d", 1, 11) == 0);
   assert(
     pa_match_stdout("not ok 1 - result of 1 == 11\n"
-                    "# \tFailed test (t/main.c:main at line 41)\n")
+                    "# \tFailed test (t/main.c:main at line 38)\n")
     == 1
   );
 
@@ -71,7 +68,7 @@ main ()
   assert(ok(1 == 19, "the second todo test") == 0);
   assert(
     pa_match_stdout("not ok 8 - the second todo test # TODO is todo man\n"
-                    "# \tFailed (TODO)test (t/main.c:main at line 71)\n")
+                    "# \tFailed (TODO)test (t/main.c:main at line 68)\n")
     == 1
   );
 
@@ -97,19 +94,43 @@ main ()
 
   assert(
     pa_match_stdout("not ok 10 - dies\n"
-                    "# \tFailed test (t/main.c:main at line 90)\n")
+                    "# \tFailed test (t/main.c:main at line 87)\n")
     == 1
   );
 
-  assert(exit_status() == 3);
+  char *x  = s_fmt("x");
+  char *y  = s_fmt("y");
+  char *a  = s_fmt("a");
+  char *a2 = s_fmt("a");
+  char *b  = s_fmt("b");
+  char *n  = NULL;
 
+  is(a, b, "not equal");
+  assert(
+    pa_match_stdout("not ok 11 - not equal\n"
+                    "# \tFailed test (t/main.c:main at line 108)\n")
+    == 1
+  );
+
+  is(a, a2, "equal");
+  assert(pa_match_stdout("ok 12 - equal\n") == 1);
+
+  is(n, NULL, "both null");
+  assert(pa_match_stdout("ok 13 - both null\n") == 1);
+
+  assert(exit_status() == 6);
   cleanup();
 
   assert(
-    pa_match_stdout("# Planned 7 tests but ran 10\n"
-                    "# Failed 3 tests of 10\n")
+    pa_match_stdout("# Planned 7 tests but ran 13\n"
+                    "# Failed 4 tests of 13\n")
     == 1
   );
 
   pa_teardown();
+  free(x);
+  free(y);
+  free(a);
+  free(a2);
+  free(b);
 }
