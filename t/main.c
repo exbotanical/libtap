@@ -74,41 +74,29 @@ main () {
 
   todo_end();
 
-  lives(
-    {
-      will_succeed();
-      printf("test\n");
-    },
-    "doesn't die"
-  );
+  lives({ will_succeed(); }, "doesn't die");
 
   assert(pa_match_stdout("ok 9 - doesn't die\n") == 1);
 
-  dies(
-    {
-      will_fail();
-      printf("test\n");
-    },
-    "dies"
-  );
+  dies({ will_fail(); }, "dies");
 
   assert(
     pa_match_stdout("not ok 10 - dies\n"
-                    "# \tFailed test (t/main.c:main at line 87)\n")
+                    "# \tFailed test (t/main.c:main at line 81)\n")
     == 1
   );
 
-  char *x  = s_fmt("x");
-  char *y  = s_fmt("y");
-  char *a  = s_fmt("a");
-  char *a2 = s_fmt("a");
-  char *b  = s_fmt("b");
+  char *x  = strdup("x");
+  char *y  = strdup("y");
+  char *a  = strdup("a");
+  char *a2 = strdup("a");
+  char *b  = strdup("b");
   char *n  = NULL;
 
   is(a, b, "not equal");
   assert(
     pa_match_stdout("not ok 11 - not equal\n"
-                    "# \tFailed test (t/main.c:main at line 108)\n")
+                    "# \tFailed test (t/main.c:main at line 96)\n")
     == 1
   );
 

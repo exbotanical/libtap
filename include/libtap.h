@@ -1,19 +1,41 @@
 #ifndef LIBTAP_H
 #define LIBTAP_H
 
+#include <stdarg.h>
+#include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sys/mman.h>
 #include <sys/param.h>
 #include <sys/wait.h>
 #include <unistd.h>
-
-#include "libutil/libutil.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 // TODO: parser for gh actions, etc
+
+static char*
+__s_fmt__ (char* fmt, ...) {
+  va_list args, args_cp;
+  va_start(args, fmt);
+  va_copy(args_cp, args);
+
+  // Pass length of zero first to determine number of bytes needed
+  unsigned int n   = vsnprintf(NULL, 0, fmt, args) + 1;
+  char*        buf = (char*)malloc(n);
+  if (!buf) {
+    return NULL;
+  }
+
+  vsnprintf(buf, n, fmt, args_cp);
+
+  va_end(args);
+  va_end(args_cp);
+
+  return buf;
+}
 
 unsigned int __ok(
   unsigned int       ok,
@@ -40,7 +62,7 @@ unsigned int exit_status(void);
 unsigned int bail_out(const char* fmt, ...);
 
 #define ok(test, ...) \
-  __ok(test ? 1 : 0, __func__, __FILE__, __LINE__, s_fmt(__VA_ARGS__))
+  __ok(test ? 1 : 0, __func__, __FILE__, __LINE__, __s_fmt__(__VA_ARGS__))
 
 #define is(actual, expected, ...)              \
   __ok(                                        \
@@ -51,21 +73,21 @@ unsigned int bail_out(const char* fmt, ...);
     __func__,                                  \
     __FILE__,                                  \
     __LINE__,                                  \
-    s_fmt(__VA_ARGS__)                         \
+    __s_fmt__(__VA_ARGS__)                     \
   );
 
-#define skip_start(cond, num_skips, ...)     \
-  do {                                       \
-    if (cond) {                              \
-      __skip(num_skips, s_fmt(__VA_ARGS__)); \
-      break;                                 \
+#define skip_start(cond, num_skips, ...)         \
+  do {                                           \
+    if (cond) {                                  \
+      __skip(num_skips, __s_fmt__(__VA_ARGS__)); \
+      break;                                     \
     }
 
 #define skip_end() \
   }                \
   while (0)
 
-#define skip(test, ...) __skip(1, s_fmt(__VA_ARGS__));
+#define skip(test, ...) __skip(1, __s_fmt__(__VA_ARGS__));
 
 #define done_testing()  return exit_status()
 
@@ -106,7 +128,7 @@ unsigned int bail_out(const char* fmt, ...);
       __func__,                                                 \
       __FILE__,                                                 \
       __LINE__,                                                 \
-      s_fmt(__VA_ARGS__)                                        \
+      __s_fmt__(__VA_ARGS__)                                    \
     );                                                          \
   } while (0)
 

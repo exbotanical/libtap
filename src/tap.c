@@ -40,8 +40,7 @@ static unsigned int is_todo_block     = 0;
 static char*        todo_msg          = NULL;
 
 noreturn void
-panic (const unsigned int errcode, const char* fmt, ...)
-{
+panic (const unsigned int errcode, const char* fmt, ...) {
   va_list args;
   va_start(args, fmt);
   vfprintf(stderr, fmt, args);
@@ -51,16 +50,14 @@ panic (const unsigned int errcode, const char* fmt, ...)
 }
 
 static void
-diagv (const char* fmt, va_list ap)
-{
+diagv (const char* fmt, va_list ap) {
   fprintf(stdout, "# ");
   vfprintf(stdout, fmt, ap);
   fprintf(stdout, "\n");
 }
 
 static void
-cleanup (void)
-{
+cleanup (void) {
   // Fast exit if we've forked
   if (getpid() != test_runner_pid) {
     return;
@@ -109,8 +106,7 @@ __ok (
   const char*        file,
   const unsigned int line,
   char*              msg
-)
-{
+) {
   lock();
 
   num_ran_tests++;
@@ -155,8 +151,7 @@ __ok (
 }
 
 void
-__skip (unsigned int num_skips, char* msg)
-{
+__skip (unsigned int num_skips, char* msg) {
   with_lock({
     while (num_skips--) {
       fprintf(stdout, "ok %d # SKIP %s", ++num_ran_tests, msg);
@@ -167,8 +162,7 @@ __skip (unsigned int num_skips, char* msg)
 }
 
 int
-__write_shared_mem (int status)
-{
+__write_shared_mem (int status) {
   static int* test_died = NULL;
   int         prev;
 
@@ -190,8 +184,7 @@ __write_shared_mem (int status)
 }
 
 void
-todo_start (const char* fmt, ...)
-{
+todo_start (const char* fmt, ...) {
   va_list ap;
 
   with_lock({
@@ -206,8 +199,7 @@ todo_start (const char* fmt, ...)
 }
 
 void
-todo_end (void)
-{
+todo_end (void) {
   with_lock({
     is_todo_block = 0;
     free(todo_msg);
@@ -216,8 +208,7 @@ todo_end (void)
 }
 
 void
-diag (const char* fmt, ...)
-{
+diag (const char* fmt, ...) {
   va_list ap;
   va_start(ap, fmt);
   diagv(fmt, ap);
@@ -225,8 +216,7 @@ diag (const char* fmt, ...)
 }
 
 void
-plan (unsigned int num_ran_tests)
-{
+plan (unsigned int num_ran_tests) {
   lock();
 
   static unsigned int singleton = 0;
@@ -262,8 +252,7 @@ plan (unsigned int num_ran_tests)
 }
 
 unsigned int
-exit_status (void)
-{
+exit_status (void) {
   unsigned int retval;
 
   with_lock({
@@ -282,8 +271,7 @@ exit_status (void)
 }
 
 unsigned int
-bail_out (const char* fmt, ...)
-{
+bail_out (const char* fmt, ...) {
   va_list args;
 
   va_start(args, fmt);
