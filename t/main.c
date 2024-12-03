@@ -11,8 +11,8 @@
 #include "tap.c"
 
 typedef struct {
-  int a;
-  int b;
+  ssize_t a;
+  ssize_t b;
 } test_util;
 
 static void
@@ -30,7 +30,7 @@ int
 main () {
   pa_setup();
 
-  unsigned int is_skip = 1;
+  size_t is_skip = 1;
 
   plan(7);
   assert(pa_match_stdout("1..7\n") == 1);
@@ -106,12 +106,42 @@ main () {
   is(n, NULL, "both null");
   assert(pa_match_stdout("ok 13 - both null\n") == 1);
 
-  assert(exit_status() == 6);
+  eq_str("xXx", "xXx", "strings equal");
+  assert(pa_match_stdout("ok 14 - strings equal\n") == 1);
+
+  neq_str("xXX", "xXx", "strings not equal");
+  assert(pa_match_stdout("ok 15 - strings not equal\n") == 1);
+
+  eq_null(NULL, "is NULL");
+  assert(pa_match_stdout("ok 16 - is NULL\n") == 1);
+
+  neq_null("xXx", "not NULL");
+  assert(pa_match_stdout("ok 17 - not NULL\n") == 1);
+
+  eq_num(3, 3, "uints equal");
+  assert(pa_match_stdout("ok 18 - uints equal\n") == 1);
+
+  eq_num(-3, -3, "signed ints equal");
+  assert(pa_match_stdout("ok 19 - signed ints equal\n") == 1);
+
+  eq_num(3.3, 3.3, "floats equal");
+  assert(pa_match_stdout("ok 20 - floats equal\n") == 1);
+
+  neq_num(3, 4, "uints not equal");
+  assert(pa_match_stdout("ok 21 - uints not equal\n") == 1);
+
+  neq_num(-3, -4, "signed ints not equal");
+  assert(pa_match_stdout("ok 22 - signed ints not equal\n") == 1);
+
+  neq_num(3.3, 3.4, "floats not equal");
+  assert(pa_match_stdout("ok 23 - floats not equal\n") == 1);
+
+  assert(exit_status() == 16);
   cleanup();
 
   assert(
-    pa_match_stdout("# Planned 7 tests but ran 13\n"
-                    "# Failed 4 tests of 13\n")
+    pa_match_stdout("# Planned 7 tests but ran 23\n"
+                    "# Failed 4 tests of 23\n")
     == 1
   );
 
