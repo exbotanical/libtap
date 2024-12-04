@@ -11,8 +11,8 @@
 #include "tap.c"
 
 typedef struct {
-  ssize_t a;
-  ssize_t b;
+  int a;
+  int b;
 } test_util;
 
 static void
@@ -30,7 +30,7 @@ int
 main () {
   pa_setup();
 
-  size_t is_skip = 1;
+  unsigned int is_skip = 1;
 
   plan(7);
   assert(pa_match_stdout("1..7\n") == 1);

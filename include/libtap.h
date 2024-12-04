@@ -37,17 +37,17 @@ __s_fmt__ (char* fmt, ...) {
   return buf;
 }
 
-size_t __ok(
-  size_t       ok,
-  const char*  fn_name,
-  const char*  file,
-  const size_t line,
-  char*        msg
+unsigned int __ok(
+  unsigned int       ok,
+  const char*        fn_name,
+  const char*        file,
+  const unsigned int line,
+  char*              msg
 );
 
-void __skip(size_t num_skips, char* msg);
+void __skip(unsigned int num_skips, char* msg);
 
-ssize_t __write_shared_mem(ssize_t status);
+int __write_shared_mem(int status);
 
 void todo_start(const char* fmt, ...);
 
@@ -55,11 +55,11 @@ void todo_end(void);
 
 void diag(const char* fmt, ...);
 
-void plan(size_t num_tests);
+void plan(unsigned int num_tests);
 
-size_t exit_status(void);
+unsigned int exit_status(void);
 
-size_t bail_out(const char* fmt, ...);
+unsigned int bail_out(const char* fmt, ...);
 
 #define ok(test, ...) \
   __ok(test ? 1 : 0, __func__, __FILE__, __LINE__, __s_fmt__(__VA_ARGS__))
@@ -149,7 +149,7 @@ size_t bail_out(const char* fmt, ...);
       exit(EXIT_FAILURE);                                       \
     }                                                           \
     /* grab prev value (and reset) - if 0, code succeeded */    \
-    ssize_t test_died = __write_shared_mem(0);                  \
+    int test_died = __write_shared_mem(0);                      \
     if (!test_died) {                                           \
       code                                                      \
     }                                                           \
