@@ -14,7 +14,7 @@
 #  define MAP_ANONYMOUS MAP_ANON
 #endif
 
-#ifdef WANT_PTHREAD
+#ifdef TAP_WANT_PTHREAD
 #  include <pthread.h>
 static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 #  define lock()   pthread_mutex_lock(&mutex)
@@ -40,7 +40,7 @@ static unsigned int is_todo_block     = 0;
 static char*        todo_msg          = NULL;
 
 noreturn void
-panic (const unsigned int errcode, const char* fmt, ...) {
+tap_panic (const unsigned int errcode, const char* fmt, ...) {
   va_list args;
   va_start(args, fmt);
   vfprintf(stderr, fmt, args);
@@ -100,7 +100,7 @@ cleanup (void) {
 }
 
 unsigned int
-__ok (
+__tap_ok (
   unsigned int       ok,
   const char*        fn_name,
   const char*        file,
@@ -116,7 +116,7 @@ __ok (
     printf("not ");
   }
 
-  fprintf(stdout, "ok %ld - ", num_ran_tests);
+  fprintf(stdout, "ok %d - ", num_ran_tests);
 
   // See "Escaping" - https://testanything.org/tap-version-14-specification.html
   char* c;
@@ -151,10 +151,10 @@ __ok (
 }
 
 void
-__skip (unsigned int num_skips, char* msg) {
+__tap_skip (unsigned int num_skips, char* msg) {
   with_lock({
     while (num_skips--) {
-      fprintf(stdout, "ok %ld # SKIP %s", ++num_ran_tests, msg);
+      fprintf(stdout, "ok %d # SKIP %s", ++num_ran_tests, msg);
       fprintf(stdout, "\n");
     }
     free(msg);
@@ -162,7 +162,7 @@ __skip (unsigned int num_skips, char* msg) {
 }
 
 int
-__write_shared_mem (int status) {
+__tap_write_shared_mem (int status) {
   static int* test_died = NULL;
   int         prev;
 
@@ -232,7 +232,7 @@ plan (unsigned int num_ran_tests) {
 
     unlock();
 
-    panic(TAP_FAILURE_EXIT_STATUS, "plan was called twice\n");
+    tap_panic(TAP_FAILURE_EXIT_STATUS, "plan was called twice\n");
   }
 
   if (num_ran_tests == 0) {
@@ -240,13 +240,13 @@ plan (unsigned int num_ran_tests) {
 
     unlock();
 
-    panic(TAP_FAILURE_EXIT_STATUS, "no tests planned\n");
+    tap_panic(TAP_FAILURE_EXIT_STATUS, "no tests planned\n");
   }
 
   has_plan          = 1;
 
   num_planned_tests = num_ran_tests;
-  fprintf(stdout, "1..%ld\n", num_planned_tests);
+  fprintf(stdout, "1..%d\n", num_planned_tests);
 
   unlock();
 }
@@ -284,3 +284,45 @@ bail_out (const char* fmt, ...) {
 
   return EXIT_SUCCESS;
 }
+
+/* Extra features */
+
+#ifdef TAP_WANT_PCRE
+#  include <pcre.h>
+
+// This should be proportional to the number of anticipated capture groups.
+// Each capture group needs three slots (start and end offsets plus internal-use
+// slot). We also must account for the main capture group. Thus: (1 + n) * 3,
+// where n is the number of desired capture groups.
+#  define NCAPTGRPS 1
+#  define OVECSIZE  (1 + NCAPTGRPS) * 3
+
+static int ovector[OVECSIZE];
+
+unsigned int
+__tap_match (
+  const char*        string,
+  const char*        pattern,
+  const char*        fn_name,
+  const char*        file,
+  const unsigned int line,
+  char*              msg
+) {
+  const char* error;
+  int         erroffset;
+  pcre*       re = pcre_compile(pattern, 0, &error, &erroffset, NULL);
+  if (!re) {
+    tap_panic(
+      TAP_FAILURE_EXIT_STATUS,
+      "Failed to compile regex pattern: %s (reason: %s)\n",
+      error,
+      pattern
+    );
+  }
+
+  int rc = pcre_exec(re, NULL, string, strlen(string), 0, 0, ovector, OVECSIZE);
+
+  return __tap_ok(rc >= 0, fn_name, file, line, msg);
+}
+
+#endif

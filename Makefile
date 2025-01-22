@@ -1,77 +1,86 @@
-CC ?= gcc
-AR ?= ar
-LINTER ?= clang-format
+include Makefile.config
 
-LIB := libtap
+.PHONY: all obj install uninstall clean unit_test unit_test_dev valgrind fmt
+.DELETE_ON_ERROR:
 
-PREFIX := /usr/local
-INCDIR := $(PREFIX)/include
-LIBDIR := $(PREFIX)/lib
-SRCDIR := src
-DEPSDIR := deps
-TESTDIR := t
-EXAMPLEDIR := examples
-LINCDIR := include
+PREFIX          := /usr/local
+INCDIR          := $(PREFIX)/include
+LIBDIR          := $(PREFIX)/lib
+SRCDIR          := src
+DEPSDIR         := deps
+TESTDIR         := t
+EXAMPLEDIR      := examples
+INCDIR          := include
 
-DYNAMIC_TARGET := $(LIB).so
-STATIC_TARGET := $(LIB).a
-EXAMPLE_TARGET := example
-TEST_TARGET := test
+DYNAMIC_TARGET  := $(LIBNAME).so
+STATIC_TARGET   := $(LIBNAME).a
+EXAMPLE_TARGET  := example
+TEST_TARGET     := test
 
-SRC := $(wildcard $(SRCDIR)/*.c)
-TEST_DEPS := $(wildcard $(DEPSDIR)/tap.c/*.c)
-DEPS := $(filter-out $(wildcard $(DEPSDIR)/tap.c/*), $(wildcard $(DEPSDIR)/*/*.c))
-OBJ := $(addprefix obj/, $(notdir $(SRC:.c=.o)) $(notdir $(DEPS:.c=.o)))
+SRC             := $(wildcard $(SRCDIR)/*.c)
+TESTS           := $(wildcard $(TESTDIR)/*.c)
+DEPS            :=
+TEST_DEPS       := $(wildcard $(DEPSDIR)/*/*.c)
+OBJ             := $(addprefix obj/, $(notdir $(SRC:.c=.o)) $(notdir $(DEPS:.c=.o)))
 
-CFLAGS := -I$(LINCDIR) -I$(DEPSDIR) -Wall -Wextra -pedantic -std=c17 -fPIC
-LIBS := -lm
+INCLUDES        := -I$(INCDIR) -I$(DEPSDIR)
+LIBS            :=
+CFLAGS          := -Wall -Wextra -pedantic $(INCLUDES)
 
-TESTS := $(wildcard $(TESTDIR)/*.c)
+ifdef TAP_WANT_PTHREAD
+	LIBS += -lpthread
+endif
 
-SEPARATOR := ---------------------------
+ifdef TAP_WANT_PCRE
+	LIBS += -lpcre
+endif
 
-all: $(DYNAMIC_TARGET) $(STATIC_TARGET)
-
+$(DYNAMIC_TARGET): CFLAGS += -shared -fPIC
 $(DYNAMIC_TARGET): $(OBJ)
-	$(CC) $(CFLAGS) $(OBJ) -shared $(LIBS) -o $(DYNAMIC_TARGET)
+	$(CC) $(CFLAGS) $^ $(LIBS) -o $@
 
 $(STATIC_TARGET): $(OBJ)
-	$(AR) rcs $@ $(OBJ)
+	$(AR) rcs $@ $^
 
-obj/%.o: $(SRCDIR)/%.c $(LINCDIR)/$(LIB).h | obj
+obj/%.o: $(SRCDIR)/%.c $(INCDIR)/$(LIBNAME).h | obj
 	$(CC) $< -c $(CFLAGS) -o $@
 
 obj/%.o: $(DEPSDIR)/*/%.c | obj
 	$(CC) $< -c $(CFLAGS) -o $@
 
+$(EXAMPLE_TARGET): $(STATIC_TARGET)
+	$(CC) $(CFLAGS) $(EXAMPLEDIR)/main.c $< $(LIBS) -o $@
+
+all: $(DYNAMIC_TARGET) $(STATIC_TARGET)
+
 obj:
-	mkdir -p obj
+	@mkdir -p obj
 
 install: $(STATIC_TARGET)
-	mkdir -p ${LIBDIR} && cp -f ${STATIC_TARGET} ${LIBDIR}/$(STATIC_TARGET)
-	mkdir -p ${INCDIR} && cp -r $(LINCDIR)/$(LIB).h ${INCDIR}
+	@mkdir -p ${LIBDIR} && cp -f ${STATIC_TARGET} ${LIBDIR}/$@
+	@mkdir -p ${INCDIR} && cp -r $(INCDIR)/$(LIBNAME).h ${INCDIR}
 
 uninstall:
-	rm -f ${LIBDIR}/$(STATIC_TARGET)
-	rm -f ${INCDIR}/libys.h
-
-$(EXAMPLE_TARGET): $(STATIC_TARGET)
-	$(CC) $(CFLAGS) $(EXAMPLEDIR)/main.c $(STATIC_TARGET) $(LIBS) -o $(EXAMPLE_TARGET)
+	@rm -f ${LIBDIR}/$(STATIC_TARGET)
+	@rm -f ${INCDIR}/libys.h
 
 clean:
-	rm -f $(OBJ) $(STATIC_TARGET) $(DYNAMIC_TARGET) $(EXAMPLE_TARGET) $(TEST_TARGET)
+	@rm -f $(OBJ) $(STATIC_TARGET) $(DYNAMIC_TARGET) $(EXAMPLE_TARGET) $(TEST_TARGET)
 
-test: $(STATIC_TARGET)
-	$(CC) $(TESTS) $(wildcard $(DEPSDIR)/tap.c/*.c) $(STATIC_TARGET) -I$(LINCDIR) -I$(SRCDIR) -I$(DEPSDIR) $(LIBS) -o $(TEST_TARGET)
+unit_test: $(STATIC_TARGET)
+	$(CC) -lpcre -lpthread -DTAP_WANT_PTHREAD=1 -DTAP_WANT_PCRE=1        \
+	$(CFLAGS) $(TESTS) $(TEST_DEPS) $(STATIC_TARGET) -I$(SRCDIR) $(LIBS) \
+	-o $(TEST_TARGET)
 	./$(TEST_TARGET)
 	$(MAKE) clean
 
+unit_test_dev:
+	ls $(SRCDIR)/*.{h,c} $(TESTDIR)/*.{h,c} | entr -s 'make -s unit_test'
+
 valgrind: $(STATIC_TARGET)
-	$(CC) $(TESTS) $(wildcard $(DEPSDIR)/tap.c/*.c) $(STATIC_TARGET) -I$(LINCDIR) -I$(SRCDIR) -I$(DEPSDIR) $(LIBS) -o $(TEST_TARGET)
-	valgrind --leak-check=full --track-origins=yes -s ./$(TEST_TARGET)
-	$(MAKE) clean
+	$(CC) $(CFLAGS) $(TESTS) $(TEST_DEPS) $< $(LIBS) -o $(TEST_TARGET)
+	$(VALGRIND) --leak-check=full --track-origins=yes -s ./$(TEST_TARGET)
+	@$(MAKE) clean
 
-lint:
-	$(LINTER) -i $(wildcard $(SRCDIR)/*) $(wildcard $(TESTDIR)/*) $(wildcard $(LINCDIR)/*) $(wildcard $(EXAMPLEDIR)/*)
-
-.PHONY: clean test all obj install uninstall lint valgrind
+fmt:
+	@$(FMT) -i $(wildcard $(SRCDIR)/*) $(wildcard $(TESTDIR)/*) $(wildcard $(INCDIR)/*) $(wildcard $(EXAMPLEDIR)/*)

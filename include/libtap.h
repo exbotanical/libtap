@@ -17,7 +17,7 @@ extern "C" {
 // TODO: parser for gh actions, etc
 
 static inline char*
-__s_fmt__ (char* fmt, ...) {
+__tap_s_fmt__ (char* fmt, ...) {
   va_list args, args_cp;
   va_start(args, fmt);
   va_copy(args_cp, args);
@@ -37,7 +37,7 @@ __s_fmt__ (char* fmt, ...) {
   return buf;
 }
 
-unsigned int __ok(
+unsigned int __tap_ok(
   unsigned int       ok,
   const char*        fn_name,
   const char*        file,
@@ -45,89 +45,14 @@ unsigned int __ok(
   char*              msg
 );
 
-void __skip(unsigned int num_skips, char* msg);
+void __tap_skip(unsigned int num_skips, char* msg);
 
-int __write_shared_mem(int status);
+int __tap_write_shared_mem(int status);
 
-void todo_start(const char* fmt, ...);
-
-void todo_end(void);
-
-void diag(const char* fmt, ...);
-
-void plan(unsigned int num_tests);
-
-unsigned int exit_status(void);
-
-unsigned int bail_out(const char* fmt, ...);
-
-#define ok(test, ...) \
-  __ok(test ? 1 : 0, __func__, __FILE__, __LINE__, __s_fmt__(__VA_ARGS__))
-
-#define eq_num(a, b, ...) \
-  __ok(a == b ? 1 : 0, __func__, __FILE__, __LINE__, __s_fmt__(__VA_ARGS__))
-
-#define neq_num(a, b, ...) \
-  __ok(a != b ? 1 : 0, __func__, __FILE__, __LINE__, __s_fmt__(__VA_ARGS__))
-
-#define eq_str(a, b, ...)      \
-  __ok(                        \
-    strcmp(a, b) == 0 ? 1 : 0, \
-    __func__,                  \
-    __FILE__,                  \
-    __LINE__,                  \
-    __s_fmt__(__VA_ARGS__)     \
-  )
-
-#define neq_str(a, b, ...)     \
-  __ok(                        \
-    strcmp(a, b) == 0 ? 0 : 1, \
-    __func__,                  \
-    __FILE__,                  \
-    __LINE__,                  \
-    __s_fmt__(__VA_ARGS__)     \
-  )
-
-#define eq_null(a, ...) \
-  __ok(a == NULL, __func__, __FILE__, __LINE__, __s_fmt__(__VA_ARGS__))
-
-#define neq_null(a, ...) \
-  __ok(a != NULL, __func__, __FILE__, __LINE__, __s_fmt__(__VA_ARGS__))
-
-#define is(actual, expected, ...)              \
-  __ok(                                        \
-    !(actual == expected ? 0                   \
-      : !actual          ? -1                  \
-      : !expected        ? 1                   \
-                         : strcmp(actual, expected)), \
-    __func__,                                  \
-    __FILE__,                                  \
-    __LINE__,                                  \
-    __s_fmt__(__VA_ARGS__)                     \
-  );
-
-#define skip_start(cond, num_skips, ...)         \
-  do {                                           \
-    if (cond) {                                  \
-      __skip(num_skips, __s_fmt__(__VA_ARGS__)); \
-      break;                                     \
-    }
-
-#define skip_end() \
-  }                \
-  while (0)
-
-#define skip(test, ...) __skip(1, __s_fmt__(__VA_ARGS__));
-
-#define done_testing()  return exit_status()
-
-#define lives(...)      _lives_or_dies(0, __VA_ARGS__)
-#define dies(...)       _lives_or_dies(1, __VA_ARGS__)
-
-#define _lives_or_dies(wants_death, code, ...)                  \
+#define __tap_lives_or_dies(wants_death, code, ...)             \
   do {                                                          \
     /* set shared memory to 1 */                                \
-    __write_shared_mem(1);                                      \
+    __tap_write_shared_mem(1);                                  \
                                                                 \
     pid_t pid = fork();                                         \
     switch (pid) {                                              \
@@ -139,7 +64,7 @@ unsigned int bail_out(const char* fmt, ...);
         close(STDOUT_FILENO);                                   \
         close(STDERR_FILENO);                                   \
         /* execute test code, then set shared memory to zero */ \
-        code __write_shared_mem(0);                             \
+        code __tap_write_shared_mem(0);                         \
         exit(EXIT_SUCCESS);                                     \
       }                                                         \
     }                                                           \
@@ -149,18 +74,129 @@ unsigned int bail_out(const char* fmt, ...);
       exit(EXIT_FAILURE);                                       \
     }                                                           \
     /* grab prev value (and reset) - if 0, code succeeded */    \
-    int test_died = __write_shared_mem(0);                      \
+    int test_died = __tap_write_shared_mem(0);                  \
     if (!test_died) {                                           \
       code                                                      \
     }                                                           \
-    __ok(                                                       \
+    __tap_ok(                                                   \
       wants_death ? test_died : !test_died,                     \
       __func__,                                                 \
       __FILE__,                                                 \
       __LINE__,                                                 \
-      __s_fmt__(__VA_ARGS__)                                    \
+      __tap_s_fmt__(__VA_ARGS__)                                \
     );                                                          \
   } while (0)
+
+/* Begin public APIs */
+
+void         todo_start(const char* fmt, ...);
+void         todo_end(void);
+void         diag(const char* fmt, ...);
+void         plan(unsigned int num_tests);
+unsigned int exit_status(void);
+unsigned int bail_out(const char* fmt, ...);
+
+#define ok(test, ...)          \
+  __tap_ok(                    \
+    test ? 1 : 0,              \
+    __func__,                  \
+    __FILE__,                  \
+    __LINE__,                  \
+    __tap_s_fmt__(__VA_ARGS__) \
+  )
+
+#define eq_num(a, b, ...)      \
+  __tap_ok(                    \
+    a == b ? 1 : 0,            \
+    __func__,                  \
+    __FILE__,                  \
+    __LINE__,                  \
+    __tap_s_fmt__(__VA_ARGS__) \
+  )
+
+#define neq_num(a, b, ...)     \
+  __tap_ok(                    \
+    a != b ? 1 : 0,            \
+    __func__,                  \
+    __FILE__,                  \
+    __LINE__,                  \
+    __tap_s_fmt__(__VA_ARGS__) \
+  )
+
+#define eq_str(a, b, ...)      \
+  __tap_ok(                    \
+    strcmp(a, b) == 0 ? 1 : 0, \
+    __func__,                  \
+    __FILE__,                  \
+    __LINE__,                  \
+    __tap_s_fmt__(__VA_ARGS__) \
+  )
+
+#define neq_str(a, b, ...)     \
+  __tap_ok(                    \
+    strcmp(a, b) == 0 ? 0 : 1, \
+    __func__,                  \
+    __FILE__,                  \
+    __LINE__,                  \
+    __tap_s_fmt__(__VA_ARGS__) \
+  )
+
+#define eq_null(a, ...) \
+  __tap_ok(a == NULL, __func__, __FILE__, __LINE__, __tap_s_fmt__(__VA_ARGS__))
+
+#define neq_null(a, ...) \
+  __tap_ok(a != NULL, __func__, __FILE__, __LINE__, __tap_s_fmt__(__VA_ARGS__))
+
+#define is(actual, expected, ...)              \
+  __tap_ok(                                    \
+    !(actual == expected ? 0                   \
+      : !actual          ? -1                  \
+      : !expected        ? 1                   \
+                         : strcmp(actual, expected)), \
+    __func__,                                  \
+    __FILE__,                                  \
+    __LINE__,                                  \
+    __tap_s_fmt__(__VA_ARGS__)                 \
+  );
+
+#define skip_start(cond, num_skips, ...)                 \
+  do {                                                   \
+    if (cond) {                                          \
+      __tap_skip(num_skips, __tap_s_fmt__(__VA_ARGS__)); \
+      break;                                             \
+    }
+
+#define skip_end() \
+  }                \
+  while (0)
+
+#define skip(test, ...) __tap_skip(1, __tap_s_fmt__(__VA_ARGS__));
+
+#define done_testing()  return exit_status()
+
+#define lives(...)      __tap_lives_or_dies(0, __VA_ARGS__)
+#define dies(...)       __tap_lives_or_dies(1, __VA_ARGS__)
+
+#ifdef TAP_WANT_PCRE
+unsigned int __tap_match(
+  const char*        string,
+  const char*        pattern,
+  const char*        fn_name,
+  const char*        file,
+  const unsigned int line,
+  char*              msg
+);
+
+#  define match_str(string, pattern, ...) \
+    __tap_match(                          \
+      string,                             \
+      pattern,                            \
+      __func__,                           \
+      __FILE__,                           \
+      __LINE__,                           \
+      __tap_s_fmt__(__VA_ARGS__)          \
+    )
+#endif
 
 #ifdef __cplusplus
 }

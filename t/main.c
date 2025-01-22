@@ -1,3 +1,6 @@
+#define TAP_WANT_PCRE    1
+#define TAP_WANT_PTHREAD 1
+
 #include <assert.h>
 #include <fnmatch.h>
 #include <stdarg.h>
@@ -8,6 +11,7 @@
 
 #include "libtap.h"
 #include "print-assert/print_assert.h"
+#include "strdup/strdup.h"
 #include "tap.c"
 
 typedef struct {
@@ -38,7 +42,7 @@ main () {
   assert(ok(1 == 11, "result of %d == %d", 1, 11) == 0);
   assert(
     pa_match_stdout("not ok 1 - result of 1 == 11\n"
-                    "# \tFailed test (t/main.c:main at line 38)\n")
+                    "# \tFailed test (t/main.c:main at line 42)\n")
     == 1
   );
 
@@ -68,7 +72,7 @@ main () {
   assert(ok(1 == 19, "the second todo test") == 0);
   assert(
     pa_match_stdout("not ok 8 - the second todo test # TODO is todo man\n"
-                    "# \tFailed (TODO)test (t/main.c:main at line 68)\n")
+                    "# \tFailed (TODO)test (t/main.c:main at line 72)\n")
     == 1
   );
 
@@ -82,7 +86,7 @@ main () {
 
   assert(
     pa_match_stdout("not ok 10 - dies\n"
-                    "# \tFailed test (t/main.c:main at line 81)\n")
+                    "# \tFailed test (t/main.c:main at line 85)\n")
     == 1
   );
 
@@ -96,7 +100,7 @@ main () {
   is(a, b, "not equal");
   assert(
     pa_match_stdout("not ok 11 - not equal\n"
-                    "# \tFailed test (t/main.c:main at line 96)\n")
+                    "# \tFailed test (t/main.c:main at line 100)\n")
     == 1
   );
 
@@ -136,12 +140,15 @@ main () {
   neq_num(3.3, 3.4, "floats not equal");
   assert(pa_match_stdout("ok 23 - floats not equal\n") == 1);
 
-  assert(exit_status() == 16);
+  match_str("provoked", "^pr.*d", "matches the string");
+  assert(pa_match_stdout("ok 24 - matches the string\n") == 1);
+
+  assert(exit_status() == 17);
   cleanup();
 
   assert(
-    pa_match_stdout("# Planned 7 tests but ran 23\n"
-                    "# Failed 4 tests of 23\n")
+    pa_match_stdout("# Planned 7 tests but ran 24\n"
+                    "# Failed 4 tests of 24\n")
     == 1
   );
 
