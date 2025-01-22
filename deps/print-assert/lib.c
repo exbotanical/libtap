@@ -20,8 +20,7 @@ static int stderr_p[2];
 
 // TODO: move to libutil/io
 static void
-write_buf (int fd, const void *buf, size_t sz)
-{
+write_buf (int fd, const void *buf, size_t sz) {
   while (sz) {
     ssize_t done;
 
@@ -35,8 +34,7 @@ write_buf (int fd, const void *buf, size_t sz)
 }
 
 static unsigned int
-match (int fd, const char *pattern)
-{
+match (int fd, const char *pattern) {
   char buf[PIPE_BUF + 1];
 
   int r = read(fd, buf, sizeof(buf) - 1);
@@ -61,8 +59,7 @@ match (int fd, const char *pattern)
 }
 
 void
-pa_printerr (const char *fmt, ...)
-{
+pa_printerr (const char *fmt, ...) {
   char    buf[PRINT_BUFFER_SZ];
   va_list ap;
 
@@ -74,9 +71,11 @@ pa_printerr (const char *fmt, ...)
   write_buf(stderrfd, "\n", 1);
 }
 
+int setup = 0;
+
 void
-pa_setup (void)
-{
+pa_setup (void) {
+  setup = 1;
   if (is_running) {
     pa_printerr("setup has already been called");
     _exit(EXIT_FAILURE);
@@ -109,15 +108,18 @@ pa_setup (void)
     _exit(EXIT_FAILURE);
   }
 
-  if (dup2(stderr_p[1], STDERR_FILENO) < 0 || dup2(stdout_p[1], STDOUT_FILENO) < 0) {
+  if (dup2(stderr_p[1], STDERR_FILENO) < 0
+      || dup2(stdout_p[1], STDOUT_FILENO) < 0) {
     pa_printerr("failed to dup2 file descriptors");
     _exit(EXIT_FAILURE);
   }
 }
 
 void
-pa_teardown (void)
-{
+pa_teardown (void) {
+  if (setup == 0) {
+    return;
+  }
   close(stderr_p[0]);
   close(stderr_p[1]);
   close(stdout_p[0]);
@@ -138,13 +140,19 @@ pa_teardown (void)
 }
 
 unsigned int
-pa_match_stdout (const char *pattern)
-{
+pa_match_stdout (const char *pattern) {
+  if (setup == 0) {
+    return 1;
+  }
+
   return match(stdout_p[0], pattern);
 }
 
 unsigned int
-pa_match_stderr (const char *pattern)
-{
+pa_match_stderr (const char *pattern) {
+  if (setup == 0) {
+    return 1;
+  }
+
   return match(stderr_p[0], pattern);
 }

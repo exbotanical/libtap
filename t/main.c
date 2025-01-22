@@ -97,17 +97,17 @@ main () {
   char *b  = strdup("b");
   char *n  = NULL;
 
-  is(a, b, "not equal");
+  eq_str(a, b, "not equal");
   assert(
     pa_match_stdout("not ok 11 - not equal\n"
                     "# \tFailed test (t/main.c:main at line 100)\n")
     == 1
   );
 
-  is(a, a2, "equal");
+  eq_str(a, a2, "equal");
   assert(pa_match_stdout("ok 12 - equal\n") == 1);
 
-  is(n, NULL, "both null");
+  eq_null(n, "both null");
   assert(pa_match_stdout("ok 13 - both null\n") == 1);
 
   eq_str("xXx", "xXx", "strings equal");

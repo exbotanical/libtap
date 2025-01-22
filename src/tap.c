@@ -39,6 +39,27 @@ static unsigned int num_failed_tests  = 0;
 static unsigned int is_todo_block     = 0;
 static char*        todo_msg          = NULL;
 
+static inline char*
+vstrdupf (const char* fmt, va_list args) {
+  va_list args_cp;
+  va_copy(args_cp, args);
+  if (!fmt) {
+    fmt = "";
+  }
+
+  // Pass length of zero first to determine number of bytes needed
+  size_t size = vsnprintf(NULL, 0, fmt, args_cp) + 2;
+  char*  buf  = (char*)malloc(size);
+  if (!buf) {
+    return NULL;
+  }
+
+  vsnprintf(buf, size, fmt, args);
+  va_end(args_cp);
+
+  return buf;
+}
+
 noreturn void
 tap_panic (const unsigned int errcode, const char* fmt, ...) {
   va_list args;
@@ -99,21 +120,23 @@ cleanup (void) {
   unlock();
 }
 
-unsigned int
-__tap_ok (
+static unsigned int
+__tap_vok (
   unsigned int       ok,
   const char*        fn_name,
   const char*        file,
   const unsigned int line,
-  char*              msg
+  const char*        fmt,
+  va_list            args
 ) {
+  char* msg = vstrdupf(fmt, args);
   lock();
 
   num_ran_tests++;
 
   if (!ok) {
     num_failed_tests++;
-    printf("not ");
+    fprintf(stdout, "not ");
   }
 
   fprintf(stdout, "ok %d - ", num_ran_tests);
@@ -150,14 +173,29 @@ __tap_ok (
   return ok ? 1 : 0;
 }
 
+unsigned int
+__tap_ok (
+  unsigned int       ok,
+  const char*        fn_name,
+  const char*        file,
+  const unsigned int line,
+  const char*        fmt,
+  ...
+) {
+  va_list args;
+  va_start(args, fmt);
+  unsigned int ret = __tap_vok(ok, fn_name, file, line, fmt, args);
+  va_end(args);
+  return ret;
+}
+
 void
-__tap_skip (unsigned int num_skips, char* msg) {
+__tap_skip (unsigned int num_skips, const char* msg) {
   with_lock({
     while (num_skips--) {
       fprintf(stdout, "ok %d # SKIP %s", ++num_ran_tests, msg);
       fprintf(stdout, "\n");
     }
-    free(msg);
   });
 }
 
@@ -287,27 +325,31 @@ bail_out (const char* fmt, ...) {
 
 /* Extra features */
 
-#ifdef TAP_WANT_PCRE
-#  include <pcre.h>
+// #ifdef TAP_WANT_PCRE TODO: FIX!
+#include <pcre.h>
 
 // This should be proportional to the number of anticipated capture groups.
 // Each capture group needs three slots (start and end offsets plus internal-use
 // slot). We also must account for the main capture group. Thus: (1 + n) * 3,
 // where n is the number of desired capture groups.
-#  define NCAPTGRPS 1
-#  define OVECSIZE  (1 + NCAPTGRPS) * 3
+#define NCAPTGRPS 1
+#define OVECSIZE  (1 + NCAPTGRPS) * 3
 
 static int ovector[OVECSIZE];
 
+// clang-format off
 unsigned int
 __tap_match (
-  const char*        string,
-  const char*        pattern,
-  const char*        fn_name,
-  const char*        file,
+  const char* string,
+  const char* pattern,
+  bool want_match,
+  const char* fn_name,
+  const char* file,
   const unsigned int line,
-  char*              msg
+  const char* fmt,
+  ...
 ) {
+  // clang-format on
   const char* error;
   int         erroffset;
   pcre*       re = pcre_compile(pattern, 0, &error, &erroffset, NULL);
@@ -322,7 +364,12 @@ __tap_match (
 
   int rc = pcre_exec(re, NULL, string, strlen(string), 0, 0, ovector, OVECSIZE);
 
-  return __tap_ok(rc >= 0, fn_name, file, line, msg);
+  va_list args;
+  va_start(args, fmt);
+  unsigned int ret
+    = __tap_vok(want_match ? rc >= 0 : rc < 0, fn_name, file, line, fmt, args);
+  va_end(args);
+  return ret;
 }
 
-#endif
+// #endif /* TAP_WANT_PCRE */
