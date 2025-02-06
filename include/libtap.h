@@ -83,6 +83,8 @@ unsigned int bail_out(const char* fmt, ...);
 #define neq_str(a, b, ...) __tap_ok(strcmp(a, b) == 0 ? 0 : 1, __func__, __FILE__, __LINE__, __VA_ARGS__)
 #define eq_null(a, ...)    __tap_ok(a == NULL, __func__, __FILE__, __LINE__, __VA_ARGS__)
 #define neq_null(a, ...)   __tap_ok(a != NULL, __func__, __FILE__, __LINE__, __VA_ARGS__)
+#define eq_true(a, ...)    __tap_ok(a == true, __func__, __FILE__, __LINE__, __VA_ARGS__)
+#define eq_false(a, ...)    __tap_ok(a == false, __func__, __FILE__, __LINE__, __VA_ARGS__)
 #define lives(...)         __tap_lives_or_dies(0, __VA_ARGS__)
 #define dies(...)          __tap_lives_or_dies(1, __VA_ARGS__)
 #define pass(...)          ok(1, __VA_ARGS__)

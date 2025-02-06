@@ -325,15 +325,15 @@ bail_out (const char* fmt, ...) {
 
 /* Extra features */
 
-// #ifdef TAP_WANT_PCRE TODO: FIX!
-#include <pcre.h>
+#ifdef TAP_WANT_PCRE
+#  include <pcre.h>
 
 // This should be proportional to the number of anticipated capture groups.
 // Each capture group needs three slots (start and end offsets plus internal-use
 // slot). We also must account for the main capture group. Thus: (1 + n) * 3,
 // where n is the number of desired capture groups.
-#define NCAPTGRPS 1
-#define OVECSIZE  (1 + NCAPTGRPS) * 3
+#  define NCAPTGRPS 1
+#  define OVECSIZE  (1 + NCAPTGRPS) * 3
 
 static int ovector[OVECSIZE];
 
@@ -372,4 +372,4 @@ __tap_match (
   return ret;
 }
 
-// #endif /* TAP_WANT_PCRE */
+#endif /* TAP_WANT_PCRE */
