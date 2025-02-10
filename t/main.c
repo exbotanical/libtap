@@ -143,12 +143,53 @@ main () {
   match_str("provoked", "^pr.*d", "matches the string");
   assert(pa_match_stdout("ok 24 - matches the string\n") == 1);
 
-  assert(exit_status() == 17);
+  gt_num(100, 99, "greater than num");
+  assert(pa_match_stdout("ok 25 - greater than num\n") == 1);
+
+  lt_num(99, 100, "less than num");
+  assert(pa_match_stdout("ok 26 - less than num\n") == 1);
+
+  gte_num(100, 100, "greater than or equal to num");
+  assert(pa_match_stdout("ok 27 - greater than or equal to num\n") == 1);
+
+  lte_num(100, 100, "less than or equal to num");
+  assert(pa_match_stdout("ok 28 - less than or equal to num\n") == 1);
+
+  gt_num(100, 991, "greater than num");
+  assert(
+    pa_match_stdout("not ok 29 - greater than num\n# \tFailed test "
+                    "(t/main.c:main at line 158)\n")
+    == 1
+  );
+
+  lt_num(991, 100, "less than num");
+  assert(
+    pa_match_stdout(
+      "not ok 30 - less than num\n# \tFailed test (t/main.c:main at line 165)\n"
+    )
+    == 1
+  );
+
+  gte_num(100, 101, "greater than or equal to num");
+  assert(
+    pa_match_stdout("not ok 31 - greater than or equal to num\n# \tFailed test "
+                    "(t/main.c:main at line 173)\n")
+    == 1
+  );
+
+  lte_num(100, 99, "less than or equal to num");
+  assert(
+    pa_match_stdout("not ok 32 - less than or equal to num\n# \tFailed test "
+                    "(t/main.c:main at line 180)\n")
+    == 1
+  );
+
+  assert(exit_status() == 25);
   cleanup();
 
   assert(
-    pa_match_stdout("# Planned 7 tests but ran 24\n"
-                    "# Failed 4 tests of 24\n")
+    pa_match_stdout("# Planned 7 tests but ran 32\n"
+                    "# Failed 8 tests of 32\n")
     == 1
   );
 
